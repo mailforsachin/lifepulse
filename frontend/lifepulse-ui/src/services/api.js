@@ -3,11 +3,11 @@ import axios from "axios"
 
 const api = axios.create({
   baseURL: "https://lifepulse.omchat.ovh/api/v1",
-  withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token") // ✅ FIXED
+  // ✅ MUST MATCH auth store
+  const token = localStorage.getItem("token")
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
