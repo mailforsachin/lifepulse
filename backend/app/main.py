@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.api.v1.leaderboard import router as leaderboard_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.daily import router as daily_router
 from app.api.v1.user import router as user_router
 from app.api.v1.language import router as language_router
+from app.api.v1.summary import router as summary_router
+from app.api.v1.daily_sentence import router as daily_sentence_router
+from app.api.v1.sentences import router as sentences_router
 
 app = FastAPI(
     title="LifePulse API",
@@ -34,3 +37,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(daily_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(language_router, prefix="/api/v1")
+app.include_router(leaderboard_router, prefix="/api/v1")
+app.include_router(summary_router, prefix="/api/v1")
+app.include_router(daily_sentence_router, prefix="/api/v1")
+app.include_router(sentences_router, prefix="/api/v1")

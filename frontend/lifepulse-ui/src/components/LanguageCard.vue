@@ -13,56 +13,64 @@ const completed = ref(false)
 const loading = ref(false)
 
 /**
- * Sentence pools
- */
-const POOLS = {
-  fr_en: [
-    {
-      primary: "Je vais au marché demain.",
-      secondary: "I am going to the market tomorrow.",
-    },
-  ],
-  en_fr: [
-    {
-      primary: "Consistency beats motivation.",
-      secondary: "La régularité bat la motivation.",
-    },
-  ],
-}
-
-/**
  * Date helpers
  */
 const today = new Date().toLocaleDateString("en-CA")
 const isFuture = computed(() => props.date > today)
 
 /**
- * Load sentence + backend completion state
+ * Deterministic date → index mapping (NO REPEATS)
+ */
+const dateToIndex = (date, length) => {
+  const epoch = new Date(date).getTime()
+  const dayNumber = Math.floor(epoch / (1000 * 60 * 60 * 24))
+  return dayNumber % length
+}
+
+/**
+ * Load sentence + completion
  */
 const load = async () => {
-  sentence.value = POOLS[props.direction]?.[0] || null
+  sentence.value = null
   completed.value = false
 
   try {
     loading.value = true
-    const res = await api.get("/daily/by-date", {
+
+    // 1️⃣ Load full sentence pool (once per load)
+    const poolRes = await api.get("/sentences", {
+      params: { language: "french" },
+    })
+
+    const pool = poolRes.data
+    if (!pool || pool.length === 0) return
+
+    // 2️⃣ Pick unique sentence per date
+    const idx = dateToIndex(props.date, pool.length)
+    const picked = pool[idx]
+
+    // 3️⃣ STRICT language separation
+    sentence.value =
+      props.direction === "fr_en"
+        ? { primary: picked.fr, secondary: picked.en }
+        : { primary: picked.en, secondary: picked.fr }
+
+    // 4️⃣ Completion state
+    const statusRes = await api.get("/daily/by-date", {
       params: { entry_date: props.date },
     })
 
     completed.value =
       props.direction === "fr_en"
-        ? !!res.data.french_completed
-        : !!res.data.english_completed
-  } catch {
-    completed.value = false
+        ? !!statusRes.data.french_completed
+        : !!statusRes.data.english_completed
+  } catch (e) {
+    console.error("LanguageCard load failed", e)
   } finally {
     loading.value = false
   }
 }
 
-/**
- * Mark language complete (past or present)
- */
 const toggleCompleted = async () => {
   if (isFuture.value) return
 
