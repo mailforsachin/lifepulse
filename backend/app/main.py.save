@@ -1,0 +1,13 @@
+from fastapi import FastAPI
+
+app = FastAPI(
+    title="LifePulse API",
+    openapi_url="/api/openapi.json",
+    docs_url="/api/docs",
+)
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+app.include_router(auth_router, prefix="/api")

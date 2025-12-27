@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+}
+
+/* ❌ DO NOT USE bg-* or text-* in @apply (Tailwind v4) */
+body {
+  background-color: #020617; /* slate-950 */
+  color: #e5e7eb;           /* slate-200 */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Touch-friendly buttons */
+button {
+  cursor: pointer;
+  user-select: none;
+}
