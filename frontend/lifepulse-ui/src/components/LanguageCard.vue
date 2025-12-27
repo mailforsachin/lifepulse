@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue"
+import { ref, onMounted, watch, computed } from "vue"
 import api from "../services/api"
 
 const props = defineProps({
@@ -13,7 +13,7 @@ const completed = ref(false)
 const loading = ref(false)
 
 /**
- * TEMP sentence pools (unchanged)
+ * Sentence pools
  */
 const POOLS = {
   fr_en: [
@@ -31,6 +31,12 @@ const POOLS = {
 }
 
 /**
+ * Date helpers
+ */
+const today = new Date().toLocaleDateString("en-CA")
+const isFuture = computed(() => props.date > today)
+
+/**
  * Load sentence + backend completion state
  */
 const load = async () => {
@@ -38,26 +44,28 @@ const load = async () => {
   completed.value = false
 
   try {
-    const res = await api.get("/daily/today", {
-      params: {},
+    loading.value = true
+    const res = await api.get("/daily/by-date", {
+      params: { entry_date: props.date },
     })
 
     completed.value =
       props.direction === "fr_en"
-        ? res.data.french_completed
-        : res.data.english_completed
+        ? !!res.data.french_completed
+        : !!res.data.english_completed
   } catch {
-    // silent — calendar navigation should not error
+    completed.value = false
+  } finally {
+    loading.value = false
   }
 }
 
 /**
- * Mark complete (ONE-WAY ACTION)
+ * Mark language complete (past or present)
  */
 const toggleCompleted = async () => {
-  if (completed.value || loading.value) return
+  if (isFuture.value) return
 
-  loading.value = true
   try {
     const res = await api.post("/language/complete", null, {
       params: {
@@ -72,8 +80,6 @@ const toggleCompleted = async () => {
         : res.data.english_completed
   } catch (e) {
     console.error("Language complete failed", e)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -88,11 +94,15 @@ watch(() => props.date, load)
 
       <button
         @click="toggleCompleted"
-        :disabled="completed || loading"
+        :disabled="isFuture || loading"
         class="text-xs px-3 py-1 rounded-full transition"
-        :class="completed
-          ? 'bg-green-600 text-white'
-          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+        :class="
+          isFuture
+            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            : completed
+              ? 'bg-green-600 text-white'
+              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+        "
       >
         {{ completed ? "Done" : "Mark done" }}
       </button>
@@ -101,6 +111,10 @@ watch(() => props.date, load)
     <div v-if="sentence" class="text-sm space-y-1">
       <div class="font-medium">{{ sentence.primary }}</div>
       <div class="text-slate-400">{{ sentence.secondary }}</div>
+    </div>
+
+    <div v-if="isFuture" class="text-xs text-slate-500">
+      Future entries are read-only
     </div>
   </section>
 </template>
